@@ -68,7 +68,7 @@ router.post('/pay', getData, async (req, res) => {
             TransactionType: "CustomerPayBillOnline",
             Amount: numericPrice,
             PartyA: formattedPhone,
-            PartyB: shortcode,
+            PartyB: process.env.DARAJATOR_TIllNO,
             PhoneNumber: formattedPhone,
             CallBackURL: process.env.DARAJATOR_CALLBACK_URL,
             AccountReference:`${process.env.TRANSACTION_DESC} for ${planName}`,

@@ -39,7 +39,7 @@ if(form){
             const clientMac =window.clientMac||"UNKOWN"
             console.log();
             
-            const response = await fetch('https://billingsystem-v6r7.onrender.com/pay', {
+            const response = await fetch('/pay', {
                 method: "POST",
                 mode: 'cors',
                 headers: {
@@ -63,7 +63,7 @@ if(form){
     // Start polling the server every 3 seconds to check if payment cleared
     const pollInterval = setInterval(async () => {
         try {
-            const statusRes = await fetch(`https://billingsystem-v6r7.onrender.com/status/${checkoutId}`);
+            const statusRes = await fetch(`/status/${checkoutId}`);
             const statusData = await statusRes.json();
 
             if (statusData.success && statusData.status === 'SUCCESS') {
@@ -91,7 +91,7 @@ const tbody=document.querySelector('tbody');
 if(tbody){
         // Optional: Filter by client MAC if available, or fetch all recent ones
         const clientMac = window.clientMac || '';
-const url = `https://billingsystem-v6r7.onrender.com/transactions?mac=${clientMac}`;
+const url = `/transactions?mac=${clientMac}`;
 
 fetch(url)
     .then(res => res.json())

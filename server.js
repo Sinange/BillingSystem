@@ -1,3 +1,4 @@
+require('dotenv').config();
 const  express = require('express');
 const app = express();
 const pay = require('./router/pay');
@@ -12,7 +13,7 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
-require('dotenv').config();
+
 const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(pay);

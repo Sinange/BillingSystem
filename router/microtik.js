@@ -1,20 +1,8 @@
 const express = require('express');
-const axios = require('axios');
+const crypto = require('crypto');
 const router = express.Router();
 const microtikSchema = require('../router/microtikSchema');
-const { getPending, removePending, getAllPending ,updateStatus} = require('./pending');
 
-
-// Helper configuration for MikroTik REST API
-const routerHost = process.env.MIKROTIK_HOST;
-// REST API typically runs on HTTP port 80 (or your configured Web port)
-const routerPort = process.env.MIKROTIK_REST_PORT || '80'; 
-const baseURL = `http://${routerHost}:${routerPort}/rest`;
-
-const auth = {
-    username: process.env.MIKROTIK_USER,
-    password: process.env.MIKROTIK_PASSWORD
-};
 function getExpiry(planName) {
     if (!planName) return new Date(Date.now() + 60 * 60 * 1000); // Safe fallback to 1 hour
     const name = String(planName).trim().toLowerCase();
@@ -47,6 +35,23 @@ function getExpiry(planName) {
     return expiryTime;
 }
 
+function requireRouterToken(req, res, next) {
+    const expectedToken = process.env.MIKROTIK_SYNC_TOKEN;
+    const providedToken = req.get('authorization')?.replace(/^Bearer\s+/i, '');
+
+    if (!expectedToken) {
+        return res.status(503).json({ success: false, error: 'Router sync is not configured' });
+    }
+
+    const expected = Buffer.from(expectedToken);
+    const provided = Buffer.from(providedToken || '');
+    if (expected.length !== provided.length || !crypto.timingSafeEqual(expected, provided)) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    next();
+}
+
 // ==================== 1. PAYMENT CALLBACK (GRANT ACCESS) ====================
 router.post('/callback', async (req, res) => {
     try {
@@ -63,35 +68,14 @@ router.post('/callback', async (req, res) => {
                 return res.status(200).json({ ResultCode: 0, ResultDesc: "Accepted" });
             }
 
-            const clientMac = record.macAddress;
             const metadata = callbackData.CallbackMetadata.Item;
             const mpesaReceiptNumber = metadata.find(o => o.Name === 'MpesaReceiptNumber')?.Value;
-            const amountPaid = metadata.find(o => o.Name === 'Amount')?.Value;
-            const phoneNumber = metadata.find(o => o.Name === 'PhoneNumber')?.Value;
             const expires = getExpiry(record.planName) || new Date(Date.now() + 60 * 60 * 1000);
-            // 1. Mark status as SUCCESS now that variables exist
-            record.status="SUCCESS"
-            record.mpesaReceiptNumber=mpesaReceiptNumber;
-            record.expires=expires;
-            const save=await record.save();
-        //    updateStatus(checkoutRequestID, { 
-        //         status: 'SUCCESS', 
-        //         mpesaReceiptNumber:mpesaReceiptNumber, 
-        //         expires: expires
-        //     });
-
-           try {
-                // 2. Grant access on MikroTik via REST API
-                await axios.post(`${baseURL}/ip/hotspot/ip-binding/add`, {
-                    'mac-address': clientMac,
-                    'type': 'bypassed',
-                    'comment': `Paid via M-Pesa:${amountPaid} ${mpesaReceiptNumber} (${phoneNumber})`
-                }, { auth });
-
-                console.log('User granted access on MikroTik successfully for MAC:', clientMac);
-            } catch (routerError) {
-                console.error('MikroTik REST API Error (Grant Access):', routerError.response?.data || routerError.message);
-            }
+            record.status = 'SUCCESS';
+            record.mpesaReceiptNumber = mpesaReceiptNumber;
+            record.expires = expires;
+            await record.save();
+            console.log('Payment saved; MikroTik will retrieve it from the router sync endpoint:', checkoutRequestID);
         } else {
             console.log('Payment failed or cancelled:', callbackData);
         } 
@@ -103,6 +87,65 @@ router.post('/callback', async (req, res) => {
         return res.status(200).json({ ResultCode: 0, ResultDesc: "Accepted" });
     }
 });
+
+router.get('/router/pending', requireRouterToken, async (req, res) => {
+    try {
+        const now = new Date();
+        const records = await microtikSchema.find({
+            status: { $in: ['SUCCESS', 'EXPIRED'] },
+            $or: [
+                { expires: { $gt: now }, routerAppliedAt: { $exists: false } },
+                { expires: { $lte: now }, routerExpiredAt: { $exists: false } }
+            ]
+        }).sort({ createdAt: 1 }).limit(50);
+
+        return res.json(records.map(record => ({
+            checkoutRequestID: record.checkoutRequestID,
+            macAddress: record.macAddress,
+            action: record.expires <= now ? 'expire' : 'grant'
+        })));
+    } catch (error) {
+        console.error('Error fetching router sync actions:', error.message);
+        return res.status(500).json({ success: false, error: 'Failed to fetch router actions' });
+    }
+});
+
+router.post('/router/ack', requireRouterToken, async (req, res) => {
+    try {
+        const { checkoutRequestID, action } = req.body || {};
+        if (typeof checkoutRequestID !== 'string' || !['grant', 'expire'].includes(action)) {
+            return res.status(400).json({ success: false, error: 'Invalid acknowledgment' });
+        }
+
+        const record = await microtikSchema.findOne({ checkoutRequestID });
+        if (!record) {
+            return res.status(404).json({ success: false, error: 'Transaction not found' });
+        }
+
+        const now = new Date();
+        if (action === 'grant') {
+            if (record.routerAppliedAt) return res.json({ success: true });
+            if (record.status !== 'SUCCESS' || !record.expires || record.expires <= now) {
+                return res.status(409).json({ success: false, error: 'Grant is no longer pending' });
+            }
+            record.routerAppliedAt = now;
+        } else {
+            if (record.routerExpiredAt) return res.json({ success: true });
+            if (!record.expires || record.expires > now) {
+                return res.status(409).json({ success: false, error: 'Expiry is not due' });
+            }
+            record.routerExpiredAt = now;
+            record.status = 'EXPIRED';
+        }
+
+        await record.save();
+        return res.json({ success: true });
+    } catch (error) {
+        console.error('Error acknowledging router sync action:', error.message);
+        return res.status(500).json({ success: false, error: 'Failed to acknowledge router action' });
+    }
+});
+
 router.get('/status/:checkoutId',async (req, res) => {
     const { checkoutId } = req.params;
        const record = await microtikSchema.findOne({checkoutRequestID:checkoutId});
@@ -136,67 +179,4 @@ router.get('/transactions', async (req, res) => {
         return res.status(500).json({ success: false, error: 'Failed to fetch transactions' });
     }
 });
-// ==================== 2. BACKGROUND EXPIRATION CHECKER ====================
-setInterval(async () => {
-    try {
-        // const records = getAllPending();
-        const now = new Date();
-        const records = await microtikSchema.find( {
-            status:"SUCCESS",
-            expires: { $lte: now }
-        });
-
-        for (const record of records) {
-                const searchMac = record.macAddress ? record.macAddress.toUpperCase() : '';
-                console.log(`⏰ Plan expired for MAC: ${searchMac}. Processing removal...`);
-
-                try {
-                    // 1. Find and Remove IP Binding Bypass
-                    const bindingsRes = await axios.get(`${baseURL}/ip/hotspot/ip-binding`, { auth });
-                    const targetBinding = (bindingsRes.data || []).find(b => 
-                        (b['mac-address'] || '').toUpperCase() === searchMac
-                    );
-
-                    if (targetBinding && targetBinding['.id']) {
-                        await axios.delete(`${baseURL}/ip/hotspot/ip-binding/${targetBinding['.id']}`, { auth });
-                        console.log(`✅ Successfully removed IP binding for MAC: ${searchMac}`);
-                    }
-
-                    // 2. Find and Terminate Active Hotspot Session
-                    const activeRes = await axios.get(`${baseURL}/ip/hotspot/active`, { auth });
-                    const targetSession = (activeRes.data || []).find(s => 
-                        (s['mac-address'] || '').toUpperCase() === searchMac
-                    );
-
-                    if (targetSession && targetSession['.id']) {
-                        await axios.delete(`${baseURL}/ip/hotspot/active/${targetSession['.id']}`, { auth });
-                        console.log(`✅ Successfully terminated active session for MAC: ${searchMac}`);
-                    }
-
-                    // 3. Find and Remove from Hotspot Host Table
-                    const hostsRes = await axios.get(`${baseURL}/ip/hotspot/host`, { auth });
-                    const targetHost = (hostsRes.data || []).find(h => 
-                        (h['mac-address'] || '').toUpperCase() === searchMac
-                    );
-
-                    if (targetHost && targetHost['.id']) {
-                        await axios.delete(`${baseURL}/ip/hotspot/host/${targetHost['.id']}`, { auth });
-                        console.log(`✅ Successfully removed host entry for MAC: ${searchMac}`);
-                    }
-
-                } catch (routerErr) {
-                    console.error('Router cleanup operation warning:', routerErr.response?.data || routerErr.message);
-                } finally {
-                    // Clean up local record regardless of router response
-                    // removePending(checkoutId);
-                    record.status = 'EXPIRED';
-                        await record.save();
-                    console.log(`🗑️ Cleaned up record for checkout ID: ${record.checkoutRequestID}`);
-            }
-        }
-    } catch (error) {
-        console.error('Error in expiration checker background job:', error.message);
-    }
-}, 60 * 1000);
-
 module.exports = router;

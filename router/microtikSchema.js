@@ -30,6 +30,12 @@ const microtikSchema = new mongoose.Schema({
     }, 
     expires: {
         type: Date,
+    },
+    routerAppliedAt: {
+        type: Date,
+    },
+    routerExpiredAt: {
+        type: Date,
     } 
 });
 

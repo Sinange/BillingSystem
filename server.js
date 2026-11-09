@@ -6,13 +6,14 @@ const microtikSchema = require('./router/microtikSchema');
 const servepages = require('./router/servepages');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const PORT = process.env.PORT || 3000;
+
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 require('dotenv').config();
+const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(pay);
 app.use(microtik);

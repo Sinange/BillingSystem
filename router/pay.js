@@ -3,7 +3,6 @@ const axios = require('axios');
 const router = express.Router();
 const {savePending}=require('./pending');
 const microtikSchema = require('../router/microtikSchema');
-require('dotenv').config();
 
 
 // FIXED: Converted from a route handler into proper Express middleware using `next`

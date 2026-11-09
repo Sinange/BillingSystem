@@ -1,6 +1,4 @@
 const mongoose = require('mongoose');
-require('dotenv').config();
-
 const microtikSchema = new mongoose.Schema({
     macAddress: { 
         type: String,

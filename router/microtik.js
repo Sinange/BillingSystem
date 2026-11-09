@@ -3,7 +3,7 @@ const axios = require('axios');
 const router = express.Router();
 const microtikSchema = require('../router/microtikSchema');
 const { getPending, removePending, getAllPending ,updateStatus} = require('./pending');
-require('dotenv').config();
+
 
 // Helper configuration for MikroTik REST API
 const routerHost = process.env.MIKROTIK_HOST;

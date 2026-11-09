@@ -60,21 +60,21 @@ router.post('/pay', getData, async (req, res) => {
         const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
 
         // Call Safaricom Sandbox STK Push
-        const response = await axios.post('https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest', {
-            BusinessShortCode: process.env.DARAJATOR_STORE_SHORTCODE,
-            PartyB: shortcode,
-            Password: password,
-            Timestamp: timestamp,
-            TransactionType: "CustomerBuyGoodsOnline",
-            Amount: numericPrice,
-            PartyA: formattedPhone,
-            PhoneNumber: formattedPhone,
-            CallBackURL: process.env.DARAJATOR_CALLBACK_URL,
-            AccountReference:`${process.env.TRANSACTION_DESC} for ${planName}`,
-            TransactionDesc: `Payment for ${planName}`
-        }, { 
-            headers: { Authorization: `Bearer ${accessToken}` } 
-        });
+      const response = await axios.post('https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest', {
+    BusinessShortCode: shortcode,
+    Password: password,
+    Timestamp: timestamp,
+    TransactionType: "CustomerPayBillOnline", // Change to "CustomerBuyGoodsOnline" if it's a Till number
+    Amount: numericPrice,
+    PartyA: formattedPhone,
+    PartyB: shortcode,
+    PhoneNumber: formattedPhone,
+    CallBackURL: process.env.DARAJATOR_CALLBACK_URL,
+    AccountReference: "WiFiBilling", // Keep it short, single-word, no spaces
+    TransactionDesc: `Payment for ${planName}`
+}, { 
+    headers: { Authorization: `Bearer ${accessToken}` } 
+});
 
         const checkoutRequestId = response.data.CheckoutRequestID;
        const schema= await microtikSchema.create(

@@ -6,6 +6,7 @@ const microtikSchema = require('./router/microtikSchema');
 const servepages = require('./router/servepages');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const PORT = process.env.PORT || 3000;
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -20,7 +21,7 @@ app.use(servepages);
 
 mongoose.connection.once('open', () => {
     console.log('Connected to MongoDB');
-    app.listen(process.env.PORT, () => {
+    app.listen(PORT, () => {
         console.log(`Server is running on port ${process.env.PORT}`);
     });
 });

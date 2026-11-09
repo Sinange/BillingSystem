@@ -52,4 +52,4 @@ const url = `https://hm85s7nf-3000.eun1.devtunnels.ms/transactions?mac=${clientM
 
 ## License
 This project is licensed under the MIT License.
-<a href="license" >View License</a>
+<a href="LICENSE" >View License</a>

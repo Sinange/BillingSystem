@@ -64,7 +64,7 @@ router.post('/pay', getData, async (req, res) => {
     BusinessShortCode: shortcode,
     Password: password,
     Timestamp: timestamp,
-    TransactionType: "CustomerPayBillOnline", // Change to "CustomerBuyGoodsOnline" if it's a Till number
+    TransactionType: "CustomerBuyGoodsOnline", // Change to "CustomerBuyGoodsOnline" if it's a Till number
     Amount: numericPrice,
     PartyA: formattedPhone,
     PartyB: process.env.DARAJATOR_STORE_SHORTCODE,

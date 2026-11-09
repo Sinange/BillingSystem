@@ -67,7 +67,7 @@ router.post('/pay', getData, async (req, res) => {
     TransactionType: "CustomerPayBillOnline", // Change to "CustomerBuyGoodsOnline" if it's a Till number
     Amount: numericPrice,
     PartyA: formattedPhone,
-    PartyB: shortcode,
+    PartyB: process.env.DARAJATOR_STORE_SHORTCODE,
     PhoneNumber: formattedPhone,
     CallBackURL: process.env.DARAJATOR_CALLBACK_URL,
     AccountReference: "WiFiBilling", // Keep it short, single-word, no spaces

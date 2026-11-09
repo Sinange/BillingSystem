@@ -61,13 +61,13 @@ router.post('/pay', getData, async (req, res) => {
 
         // Call Safaricom Sandbox STK Push
         const response = await axios.post('https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest', {
-            BusinessShortCode: shortcode,
+            BusinessShortCode: process.env.DARAJATOR_STORE_SHORTCODE,
+            PartyB: shortcode,
             Password: password,
             Timestamp: timestamp,
             TransactionType: "CustomerBuyGoodsOnline",
             Amount: numericPrice,
             PartyA: formattedPhone,
-            PartyB: shortcode,
             PhoneNumber: formattedPhone,
             CallBackURL: process.env.DARAJATOR_CALLBACK_URL,
             AccountReference:`${process.env.TRANSACTION_DESC} for ${planName}`,

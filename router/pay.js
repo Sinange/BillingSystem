@@ -70,7 +70,7 @@ router.post('/pay', getData, async (req, res) => {
     PartyB: process.env.DARAJATOR_STORE_SHORTCODE,
     PhoneNumber: formattedPhone,
     CallBackURL: process.env.DARAJATOR_CALLBACK_URL,
-    AccountReference: "WiFiBilling", // Keep it short, single-word, no spaces
+    AccountReference:`${process.env.TRANSACTION_DESC} for ${planName}`,
     TransactionDesc: `Payment for ${planName}`
 }, { 
     headers: { Authorization: `Bearer ${accessToken}` } 

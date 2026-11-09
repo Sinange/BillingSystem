@@ -64,7 +64,7 @@ router.post('/pay', getData, async (req, res) => {
             BusinessShortCode: shortcode,
             Password: password,
             Timestamp: timestamp,
-            TransactionType: "CustomerPayBillOnline",
+            TransactionType: "CustomerBuyGoodsOnline",
             Amount: numericPrice,
             PartyA: formattedPhone,
             PartyB: shortcode,

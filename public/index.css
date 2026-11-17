@@ -116,14 +116,16 @@ body {
 }
 
 /* Navbar Styling */
+header{
+   position: sticky;
+    top:0;   
+}
 .navbar {
-  position: sticky;
-    top:0;
     display: flex;
     justify-content: space-around;
     background-color: green;
     align-items: center;
-  
+    padding: 10px 20px;
 }
 
 .navbar a {

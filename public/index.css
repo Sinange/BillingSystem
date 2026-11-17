@@ -111,7 +111,13 @@ footer{
 body {
     font-family: Arial, sans-serif;
     background-color: #f9f9f9;
-    height:100%;
+     display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    max-width: 100vw;
+    padding: 10px 10px;
+    margin-right:25px 25px;
+
     /* Adds bottom padding so the fixed footer doesn't cover content */
 }
 
@@ -162,13 +168,7 @@ header{
 
 /* Packages Grid Container */
 .packages {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
-    max-width: 100vw;
-    padding: 10px 10px;
-    margin-right:25px 25px;
-
+      height:100vh; 
 }
 
 /* Individual Package Card */

@@ -121,12 +121,9 @@ body {
     justify-content: space-around;
     background-color: green;
     position: sticky;
-   
-    width: 100%;
+    top:0;
     align-items: center;
     padding: 10px 20px;
-    z-index: 1000;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .navbar a {
@@ -384,7 +381,7 @@ tr:hover {
 }
 /* Footer Styling */
 footer {
-    position: fixed;
+    position: sticky;
     bottom: 0;
     text-align: center;
     font-size: 14px;

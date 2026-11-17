@@ -112,16 +112,15 @@ body {
     font-family: Arial, sans-serif;
     background-color: #f9f9f9;
     /* Adds bottom padding so the fixed footer doesn't cover content */
-    padding-bottom: 70px;
 }
 
 /* Navbar Styling */
 .navbar {
+  position: sticky;
+    top:0;
     display: flex;
     justify-content: space-around;
     background-color: green;
-    position: sticky;
-    top:0;
     align-items: center;
     padding: 10px 20px;
 }

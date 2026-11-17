@@ -111,7 +111,7 @@ footer{
 body {
     font-family: Arial, sans-serif;
     background-color: #f9f9f9;
-    
+    padding-bottom: 50px;
 
     /* Adds bottom padding so the fixed footer doesn't cover content */
 }

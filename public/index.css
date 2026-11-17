@@ -111,7 +111,6 @@ footer{
 body {
     font-family: Arial, sans-serif;
     background-color: #f9f9f9;
-    min-height:100vh;
     /* Adds bottom padding so the fixed footer doesn't cover content */
 }
 
@@ -168,6 +167,7 @@ header{
     max-width: 100vw;
     padding: 10px 10px;
     margin-right:25px 25px;
+       min-height:100vh;
 
 }
 
